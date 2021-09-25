@@ -2,9 +2,7 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -29,30 +27,32 @@ func parseInput(input string) (string, []string) {
 	return command, args
 }
 
-func execCommand(command string, args []string) *bytes.Buffer {
+func execCommand(command string, args []string) error {
 	cmd := exec.Command(command, args...)
-	var out bytes.Buffer
-	cmd.Stdout = &out
+
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
 
 	err := cmd.Run()
-	if err != nil {
-		log.Fatal(err)
-	}
 
-	return &out
+	return err
 }
 
-func displayOutput(out *bytes.Buffer) {
-	fmt.Print(out.String())
+func loop(reader *bufio.Reader) {
+	displayPrompt()
+	input := readInput(reader)
+	command, args := parseInput(input)
+	err := execCommand(command, args)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return
+	}
 }
 
 func main() {
 	reader := bufio.NewReader(os.Stdin)
 	for {
-		displayPrompt()
-		input := readInput(reader)
-		command, args := parseInput(input)
-		out := execCommand(command, args)
-		displayOutput(out)
+		loop(reader)
 	}
 }
