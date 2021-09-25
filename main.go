@@ -4,17 +4,28 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
+	"os/signal"
 	"strings"
+	"syscall"
 )
 
 func displayPrompt() {
 	fmt.Print("> ")
 }
 
+func exitShell(code int) {
+	os.Exit(code)
+}
+
 func readInput(reader *bufio.Reader) string {
-	line, _ := reader.ReadString('\n')
+	line, err := reader.ReadString('\n')
+	if err == io.EOF {
+		exitShell(0)
+	}
+
 	line = strings.TrimSuffix(line, "\n")
 
 	return line
@@ -50,10 +61,12 @@ func execRealCommand(command string, args []string) error {
 func execCommand(command string, args []string) error {
 	var err error = nil
 	switch command {
+	case "":
+		// do nothing
 	case "cd":
 		err = execChangeDir(args)
 	case "exit":
-		os.Exit(0)
+		exitShell(0)
 	default:
 		err = execRealCommand(command, args)
 	}
@@ -72,7 +85,30 @@ func loop(reader *bufio.Reader) {
 	}
 }
 
+func setupSignals() {
+	signalChanel := make(chan os.Signal, 1)
+	signal.Notify(signalChanel,
+		syscall.SIGINT,
+		syscall.SIGTSTP)
+
+	go func() {
+		for {
+			s := <-signalChanel
+			switch s {
+			case syscall.SIGINT: // Ctrl + c
+				fmt.Println()
+				displayPrompt()
+			case syscall.SIGTSTP: // Ctrl + z
+				fmt.Println()
+				displayPrompt()
+			}
+		}
+	}()
+}
+
 func main() {
+	setupSignals()
+
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		loop(reader)
