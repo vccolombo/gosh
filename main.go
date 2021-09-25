@@ -13,7 +13,8 @@ import (
 )
 
 func displayPrompt() {
-	fmt.Print("> ")
+	path, _ := os.Getwd()
+	fmt.Printf("%s > ", path)
 }
 
 func exitShell(code int) {
@@ -80,6 +81,7 @@ func loop(reader *bufio.Reader) {
 	command, args := parseInput(input)
 	err := execCommand(command, args)
 	if err != nil {
+		// exitError, _ := err.(*exec.ExitError)
 		fmt.Fprintln(os.Stderr, err)
 		return
 	}
