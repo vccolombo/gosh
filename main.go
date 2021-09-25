@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -27,7 +28,14 @@ func parseInput(input string) (string, []string) {
 	return command, args
 }
 
-func execCommand(command string, args []string) error {
+func execChangeDir(args []string) error {
+	if len(args) != 1 {
+		return errors.New("cd error: no path provided")
+	}
+	return os.Chdir(args[0])
+}
+
+func execRealCommand(command string, args []string) error {
 	cmd := exec.Command(command, args...)
 
 	cmd.Stdout = os.Stdout
@@ -35,6 +43,20 @@ func execCommand(command string, args []string) error {
 	cmd.Stdin = os.Stdin
 
 	err := cmd.Run()
+
+	return err
+}
+
+func execCommand(command string, args []string) error {
+	var err error = nil
+	switch command {
+	case "cd":
+		err = execChangeDir(args)
+	case "exit":
+		os.Exit(0)
+	default:
+		err = execRealCommand(command, args)
+	}
 
 	return err
 }
