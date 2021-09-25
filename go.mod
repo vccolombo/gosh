@@ -1,3 +1,3 @@
-module github.com/vccolombo/vsh
+module github.com/vccolombo/gosh
 
 go 1.17
